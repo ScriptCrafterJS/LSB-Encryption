@@ -5,37 +5,85 @@ import javax.imageio.ImageIO;
 
 public class EncodeLSB {
     public static void main(String[] args) {
-        String message = "once a soldier, always a soldier";
+        String message = "A";
+        System.out.println("Start Encoding...");
         encode(message);
+        System.out.println("Message successfully encoded");
+        System.out.println("Start Decoding...");
+        String decodedMessage = decode(message);
+        System.out.println("Decoded Message: " + decodedMessage);
+    }
+
+    public static String decode(String message) {
+        String binaryMessage = convertMessageToBinary(message);
+        int binaryMessageCounter = 0;
+        StringBuilder decodedMessage = new StringBuilder();
+        int LSBposition = 0; // 0 endicates the most LSB and 1 the second most LSB and so on...
+        try {
+            File imageFile = new File("encoded_tree.jpg");
+            BufferedImage image = ImageIO.read(imageFile);
+
+            int width = image.getWidth();
+            int height = image.getHeight();
+            outerloop: while (binaryMessageCounter < binaryMessage.length()) {
+                for (int y = 0; y < height; y++) {
+                    for (int x = 0; x < width; x++) {
+                        int pixel = getPixel(image, x, y);
+                        int channelCounter = 0;
+                        // traverse the channels to extract the bits from the pixel
+                        while (channelCounter < 3) {
+                            int channelValue = getChannelValue(channelCounter, pixel);
+                            System.out.println(Integer.toBinaryString(channelValue));
+                            byte bit = (byte) extractBit(channelValue, LSBposition);
+                            decodedMessage.append(bit);
+
+                            channelCounter++;
+                            binaryMessageCounter++;
+                            // System.out.println(binaryMessageCounter + " " + binaryMessage.length());
+
+                            // if we here reached the end of the binary message there's no need to continue
+                            if (binaryMessageCounter == binaryMessage.length()) {
+                                break outerloop;
+                            }
+                        }
+                    }
+                }
+                LSBposition++;
+            }
+
+        } catch (Exception e) {
+            System.out.println("Error: " + e.getMessage());
+        }
+        return decodedMessage.toString();
+    }
+
+    public static int extractBit(int channelValueExtracted, int LSBposition) {
+        return (channelValueExtracted >> LSBposition) & 1;
     }
 
     public static void encode(String message) {
         String binaryMessage = convertMessageToBinary(message);
-        System.out.println(binaryMessage);
-        int binaryMessageCounter = 0;// this counter used for keeping track of the binaryMessage
+        System.out.println("Binary message: " + binaryMessage);
+        int binaryMessageCounter = 0; // this counter used for keeping track of the binaryMessage
+        int LSBposition = 0; // 0 endicates the most LSB and 1 the second most LSB and so on...
 
         try {
-            File imageFile = new File("tree.jpg");
+            File imageFile = new File("50x33 tree.jpg");
             BufferedImage image = ImageIO.read(imageFile);
 
             int width = image.getWidth();
             int height = image.getHeight();
 
-            // the LSBposition is the LSB to be changed in the channel (0 == first LSB, 1 ==
-            // second LSB, ...)
-            int LSBposition = 0;
-            // ourter loop condition means: as long as there still bits in the binary
-            // message keep going
-            outerloop: while (binaryMessage.length() > binaryMessageCounter) {
+            outerloop: while (binaryMessageCounter < binaryMessage.length()) {
                 for (int y = 0; y < height; y++) {
                     for (int x = 0; x < width; x++) {
-
                         int pixel = getPixel(image, x, y);
 
-                        int channelCounter = 0;// 0 == red, 1 == green, 2 == blue
+                        int channelCounter = 0; // 0 == red, 1 == green, 2 == blue
                         int[] channels = new int[3];
+                        System.out.println("Channels Extracted");
                         while (channelCounter < 3) {
-                            // xtract the 3 color components (Red,Green,Blue) from the pixel
+                            // Extract the 3 color components (Red, Green, Blue) from the pixel
                             int channelValueExtracted = getChannelValue(channelCounter, pixel);
 
                             System.out.println(Integer.toBinaryString(channelValueExtracted));
@@ -43,35 +91,40 @@ public class EncodeLSB {
                             channels[channelCounter] = alterChannelValue(channelValueExtracted, LSBposition,
                                     binaryMessage.charAt(binaryMessageCounter));
 
-                            channelCounter++;// to traverse the 3 channels
-                            binaryMessageCounter++;// to traverse each bit in the binary message
+                            channelCounter++; // to traverse the 3 channels
+                            binaryMessageCounter++; // to traverse each bit in the binary message
+                            // if we here reached the end of the binary message theres no need to continue
                             if (binaryMessageCounter == binaryMessage.length()) {
-                                // if we here reached the end of the binary message theres no need to continue
                                 setPixel(channels, image, x, y);
+
                                 break outerloop;
                             }
                         }
 
                         System.out.println(
-                                "x: " + x + " y: " + y + " channels: " + Integer.toBinaryString(channels[0]) + " "
+                                "x: " + x + " y: " + y + ", modified channels: " + Integer.toBinaryString(channels[0])
+                                        + " "
                                         + Integer.toBinaryString(channels[1]) + " "
                                         + Integer.toBinaryString(channels[2]));
                         setPixel(channels, image, x, y);
 
                         if (binaryMessageCounter == binaryMessage.length()) {
+                            System.out.println("Message successfully encoded");
                             break outerloop;
                         }
                     }
                 }
                 LSBposition++;
                 // if the current bit being altered is closer to the left side of the byte then
-                // we alter the user that it may cuase a loss of quality
-                if (LSBposition > 5) {
+                // we alter the user that it may cause a loss of quality
+                if (LSBposition > 7) {
                     System.out.println(
                             "The message you are trying to hide is taking too much space in the image and that may result in a loss of quality");
                     break;
                 }
             }
+            // output the new image (stego file)
+            ImageIO.write(image, "jpg", new File("encoded_tree.jpg"));
         } catch (IOException e) {
             System.out.println("Error: " + e.getMessage());
         }
@@ -87,6 +140,7 @@ public class EncodeLSB {
     }
 
     public static int getChannelValue(int channelNumber, int pixel) {
+        // 0 == red, 1 == green, 2 == blue
         switch (channelNumber) {
             case 0:
                 return (pixel >> 16) & 0xff;
@@ -123,5 +177,4 @@ public class EncodeLSB {
         return builder.toString();
     }
 
-    // make a method to check if the pixel value is grator that 150
 }
