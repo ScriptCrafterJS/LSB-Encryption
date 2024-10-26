@@ -5,7 +5,7 @@ import javax.imageio.ImageIO;
 
 public class EncodeLSB {
     public static void main(String[] args) {
-        String message = "A";
+        String message = "Hi";
         System.out.println("Start Encoding...");
         encode(message);
         System.out.println("Message successfully encoded");
@@ -20,7 +20,7 @@ public class EncodeLSB {
         StringBuilder decodedMessage = new StringBuilder();
         int LSBposition = 0; // 0 endicates the most LSB and 1 the second most LSB and so on...
         try {
-            File imageFile = new File("encoded_tree.jpg");
+            File imageFile = new File("encoded_tree.png");
             BufferedImage image = ImageIO.read(imageFile);
 
             int width = image.getWidth();
@@ -68,7 +68,7 @@ public class EncodeLSB {
         int LSBposition = 0; // 0 endicates the most LSB and 1 the second most LSB and so on...
 
         try {
-            File imageFile = new File("50x33 tree.jpg");
+            File imageFile = new File("50x33 tree.png");
             BufferedImage image = ImageIO.read(imageFile);
 
             int width = image.getWidth();
@@ -124,7 +124,7 @@ public class EncodeLSB {
                 }
             }
             // output the new image (stego file)
-            ImageIO.write(image, "jpg", new File("encoded_tree.jpg"));
+            ImageIO.write(image, "png", new File("encoded_tree.png"));
         } catch (IOException e) {
             System.out.println("Error: " + e.getMessage());
         }
