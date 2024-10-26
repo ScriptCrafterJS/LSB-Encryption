@@ -5,41 +5,73 @@ import javax.imageio.ImageIO;
 
 public class EncodeLSB {
     public static void main(String[] args) {
-        String message = "Welcome";
+        String message = "once a soldier, always a soldier";
         encode(message);
     }
 
     public static void encode(String message) {
         String binaryMessage = convertMessageToBinary(message);
-        int BMCounter = 0;// this counter used for keeping track of the binaryMessage
+        System.out.println(binaryMessage);
+        int binaryMessageCounter = 0;// this counter used for keeping track of the binaryMessage
+
         try {
-            // Step 1: Load the image
-            File imageFile = new File("tree.jpg"); // Replace with your image path
+            File imageFile = new File("tree.jpg");
             BufferedImage image = ImageIO.read(imageFile);
 
-            // Step 2: Get image dimensions
             int width = image.getWidth();
             int height = image.getHeight();
 
-            // Step 3: Loop through each pixel
-            // the position is the LSB to be changed in the channel (0 == first LSB, 1 ==
+            // the LSBposition is the LSB to be changed in the channel (0 == first LSB, 1 ==
             // second LSB, ...)
-            int position = 0;
-            for (int y = 0; y < height; y++) {
-                for (int x = 0; x < width; x++) {
+            int LSBposition = 0;
+            // ourter loop condition means: as long as there still bits in the binary
+            // message keep going
+            outerloop: while (binaryMessage.length() > binaryMessageCounter) {
+                for (int y = 0; y < height; y++) {
+                    for (int x = 0; x < width; x++) {
 
-                    int pixel = getPixel(image, x, y);
+                        int pixel = getPixel(image, x, y);
 
-                    int[] updatedPixel = updatePixel(pixel, position, binaryMessage, BMCounter);
+                        int channelCounter = 0;// 0 == red, 1 == green, 2 == blue
+                        int[] channels = new int[3];
+                        while (channelCounter < 3) {
+                            // xtract the 3 color components (Red,Green,Blue) from the pixel
+                            int channelValueExtracted = getChannelValue(channelCounter, pixel);
 
-                    setPixel(updatedPixel, image, x, y);
+                            System.out.println(Integer.toBinaryString(channelValueExtracted));
 
-                    if (BMCounter == binaryMessage.length()) {
-                        return;
+                            channels[channelCounter] = alterChannelValue(channelValueExtracted, LSBposition,
+                                    binaryMessage.charAt(binaryMessageCounter));
+
+                            channelCounter++;// to traverse the 3 channels
+                            binaryMessageCounter++;// to traverse each bit in the binary message
+                            if (binaryMessageCounter == binaryMessage.length()) {
+                                // if we here reached the end of the binary message theres no need to continue
+                                setPixel(channels, image, x, y);
+                                break outerloop;
+                            }
+                        }
+
+                        System.out.println(
+                                "x: " + x + " y: " + y + " channels: " + Integer.toBinaryString(channels[0]) + " "
+                                        + Integer.toBinaryString(channels[1]) + " "
+                                        + Integer.toBinaryString(channels[2]));
+                        setPixel(channels, image, x, y);
+
+                        if (binaryMessageCounter == binaryMessage.length()) {
+                            break outerloop;
+                        }
                     }
                 }
+                LSBposition++;
+                // if the current bit being altered is closer to the left side of the byte then
+                // we alter the user that it may cuase a loss of quality
+                if (LSBposition > 5) {
+                    System.out.println(
+                            "The message you are trying to hide is taking too much space in the image and that may result in a loss of quality");
+                    break;
+                }
             }
-            position++;
         } catch (IOException e) {
             System.out.println("Error: " + e.getMessage());
         }
@@ -48,28 +80,6 @@ public class EncodeLSB {
     public static void setPixel(int[] channels, BufferedImage image, int x, int y) {
         int newPixelValue = (channels[0] << 16) | (channels[1] << 8) | channels[2];
         image.setRGB(x, y, newPixelValue);
-    }
-
-    public static int[] updatePixel(int pixel, int position, String binaryMessage,
-            int counter) {
-        int channelCounter = 0;// 0 == red, 1 == green, 2 == blue
-        int[] channels = new int[3];
-        while (channelCounter < 3) {
-            // Step 4: Extract the Red, Green, Blue values from the pixel
-            int channelValueExtracted = getChannelValue(channelCounter, pixel);
-
-            System.out.println(Integer.toBinaryString(channelValueExtracted));
-
-            channels[channelCounter] = alterChannelValue(channelValueExtracted, position,
-                    binaryMessage.charAt(counter));
-
-            channelCounter++;
-            counter++;
-            if (counter == binaryMessage.length()) {
-                break;
-            }
-        }
-        return channels;
     }
 
     public static int getPixel(BufferedImage image, int x, int y) {
@@ -90,15 +100,15 @@ public class EncodeLSB {
         return 0;
     }
 
-    public static int alterChannelValue(int channel, int position, char modifyingBit) {
+    public static int alterChannelValue(int channel, int LSBposition, char modifyingBit) {
         // if the modifying bit is 0 means i want to set this possition in the channel
         // to 0
         // otherwise i want to set it to 1
         switch (modifyingBit) {
             case '0':
-                return channel & ~(1 << position);
+                return channel & ~(1 << LSBposition);
             case '1':
-                return channel | (1 << position);
+                return channel | (1 << LSBposition);
             default:
                 System.out.println("Please enter eithr '1' or '0' as a modifyingBit");
         }
@@ -112,4 +122,6 @@ public class EncodeLSB {
         }
         return builder.toString();
     }
+
+    // make a method to check if the pixel value is grator that 150
 }
