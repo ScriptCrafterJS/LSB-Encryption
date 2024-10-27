@@ -54,7 +54,7 @@ public class EncodeLSB {
         } catch (Exception e) {
             System.out.println("Error: " + e.getMessage());
         }
-        return decodedMessage.toString();
+        return convertBinaryToMessage(decodedMessage.toString());
     }
 
     public static int extractBit(int channelValueExtracted, int LSBposition) {
@@ -172,7 +172,17 @@ public class EncodeLSB {
     public static String convertMessageToBinary(String message) {
         StringBuilder builder = new StringBuilder();
         for (char c : message.toCharArray()) {
-            builder.append(Integer.toBinaryString(c - '0'));
+            builder.append(String.format("%8s", Integer.toBinaryString(c)).replaceAll(" ", "0"));
+        }
+        return builder.toString();
+    }
+
+    public static String convertBinaryToMessage(String binaryMessage) {
+        StringBuilder builder = new StringBuilder();
+        for (int i = 0; i < binaryMessage.length(); i += 8) {
+            String byteString = binaryMessage.substring(i, i + 8);
+            char c = (char) Integer.parseInt(byteString, 2);
+            builder.append(c);
         }
         return builder.toString();
     }
