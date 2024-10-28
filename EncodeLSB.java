@@ -4,18 +4,21 @@ import java.io.IOException;
 import javax.imageio.ImageIO;
 
 public class EncodeLSB {
+    private static String message;
+    private static String binaryMessage;
+
     public static void main(String[] args) {
-        String message = "Hi";
+        message = "A";
+        binaryMessage = convertMessageToBinary(message);
         System.out.println("Start Encoding...");
-        encode(message);
+        encode();
         System.out.println("Message successfully encoded");
-        System.out.println("Start Decoding...");
-        String decodedMessage = decode(message);
-        System.out.println("Decoded Message: " + decodedMessage);
+        // System.out.println("Start Decoding...");
+        // String decodedMessage = decode();
+        // System.out.println("Decoded Message: " + decodedMessage);
     }
 
-    public static String decode(String message) {
-        String binaryMessage = convertMessageToBinary(message);
+    public static String decode() {
         int binaryMessageCounter = 0;
         StringBuilder decodedMessage = new StringBuilder();
         int LSBposition = 0; // 0 endicates the most LSB and 1 the second most LSB and so on...
@@ -61,8 +64,7 @@ public class EncodeLSB {
         return (channelValueExtracted >> LSBposition) & 1;
     }
 
-    public static void encode(String message) {
-        String binaryMessage = convertMessageToBinary(message);
+    public static void encode() {
         System.out.println("Binary message: " + binaryMessage);
         int binaryMessageCounter = 0; // this counter used for keeping track of the binaryMessage
         int LSBposition = 0; // 0 endicates the most LSB and 1 the second most LSB and so on...
@@ -75,43 +77,101 @@ public class EncodeLSB {
             int height = image.getHeight();
 
             outerloop: while (binaryMessageCounter < binaryMessage.length()) {
-                for (int y = 0; y < height; y++) {
-                    for (int x = 0; x < width; x++) {
-                        int pixel = getPixel(image, x, y);
+                for (int y = 0; y < height; y += 2) {
+                    for (int x = 0; x < width; x += 2) {
 
                         int channelCounter = 0; // 0 == red, 1 == green, 2 == blue
                         int[] channels = new int[3];
-                        System.out.println("Channels Extracted");
-                        while (channelCounter < 3) {
-                            // Extract the 3 color components (Red, Green, Blue) from the pixel
-                            int channelValueExtracted = getChannelValue(channelCounter, pixel);
 
-                            System.out.println(Integer.toBinaryString(channelValueExtracted));
-
-                            channels[channelCounter] = alterChannelValue(channelValueExtracted, LSBposition,
-                                    binaryMessage.charAt(binaryMessageCounter));
-
-                            channelCounter++; // to traverse the 3 channels
-                            binaryMessageCounter++; // to traverse each bit in the binary message
-                            // if we here reached the end of the binary message theres no need to continue
-                            if (binaryMessageCounter == binaryMessage.length()) {
-                                setPixel(channels, image, x, y);
-
-                                break outerloop;
+                        // here we check for the main diagonal
+                        if (y < height && x < width) {
+                            int pixel = getPixel(image, x, y);
+                            System.out.println("Channels Extracted");
+                            while (channelCounter < 3) {
+                                channels = extractColorComponents(channelCounter, pixel, LSBposition,
+                                        binaryMessageCounter, channels);
+                                // if we here reached the end of the binary message theres no need to continue
+                                // to other color channels
+                                if (binaryMessageCounter == binaryMessage.length()) {
+                                    setPixel(channels, image, x, y);
+                                    break outerloop;
+                                }
+                                channelCounter++; // to traverse the 3 channels
+                                binaryMessageCounter++; // to traverse each bit in the binary message
+                                if (binaryMessageCounter == binaryMessage.length()) {
+                                    break outerloop;
+                                }
                             }
+                            setPixel(channels, image, x, y);
+                            displayChannels(x, y, channels);
+                        }
+                        channelCounter = 0; // to reset for the next pixel
+                        channels = new int[3];
+                        if (y + 1 < height && x + 1 < width) {
+                            int pixel = getPixel(image, x + 1, y + 1);
+                            System.out.println("Channels Extracted");
+                            while (channelCounter < 3) {
+                                channels = extractColorComponents(channelCounter, pixel, LSBposition,
+                                        binaryMessageCounter, channels);
+
+                                if (binaryMessageCounter == binaryMessage.length()) {
+                                    setPixel(channels, image, x + 1, y + 1);
+                                    break outerloop;
+                                }
+                                channelCounter++;
+                                binaryMessageCounter++;
+                                if (binaryMessageCounter == binaryMessage.length()) {
+                                    break outerloop;
+                                }
+                            }
+                            setPixel(channels, image, x + 1, y + 1);
+                            displayChannels(x + 1, y + 1, channels);
+                        }
+                        channelCounter = 0; // to reset for the next pixel
+                        channels = new int[3];
+                        // here we check for the second diagonal
+                        if (y < height && x + 1 < width) {
+                            int pixel = getPixel(image, x + 1, y);
+                            System.out.println("Channels Extracted");
+                            while (channelCounter < 3) {
+                                channels = extractColorComponents(channelCounter, pixel, LSBposition,
+                                        binaryMessageCounter, channels);
+
+                                if (binaryMessageCounter == binaryMessage.length()) {
+                                    setPixel(channels, image, x + 1, y);
+                                    break outerloop;
+                                }
+                                channelCounter++;
+                                binaryMessageCounter++;
+                                if (binaryMessageCounter == binaryMessage.length()) {
+                                    break outerloop;
+                                }
+                            }
+                            setPixel(channels, image, x + 1, y);
+                            displayChannels(x + 1, y, channels);
                         }
 
-                        System.out.println(
-                                "x: " + x + " y: " + y + ", modified channels: " + Integer.toBinaryString(channels[0])
-                                        + " "
-                                        + Integer.toBinaryString(channels[1]) + " "
-                                        + Integer.toBinaryString(channels[2]));
-                        setPixel(channels, image, x, y);
+                        if (y + 1 < height && x < width) {
+                            int pixel = getPixel(image, x, y + 1);
+                            System.out.println("Channels Extracted");
+                            while (channelCounter < 3) {
+                                channels = extractColorComponents(channelCounter, pixel, LSBposition,
+                                        binaryMessageCounter, channels);
 
-                        if (binaryMessageCounter == binaryMessage.length()) {
-                            System.out.println("Message successfully encoded");
-                            break outerloop;
+                                if (binaryMessageCounter == binaryMessage.length()) {
+                                    setPixel(channels, image, x, y + 1);
+                                    break outerloop;
+                                }
+                                channelCounter++;
+                                binaryMessageCounter++;
+                                if (binaryMessageCounter == binaryMessage.length()) {
+                                    break outerloop;
+                                }
+                            }
+                            setPixel(channels, image, x, y + 1);
+                            displayChannels(x, y + 1, channels);
                         }
+
                     }
                 }
                 LSBposition++;
@@ -128,6 +188,27 @@ public class EncodeLSB {
         } catch (IOException e) {
             System.out.println("Error: " + e.getMessage());
         }
+    }
+
+    public static int[] extractColorComponents(int channelCounter, int pixel, int LSBposition, int binaryMessageCounter,
+            int[] channels) {
+        // Extract the 3 color components (Red, Green, Blue) from the pixel
+        int channelValueExtracted = getChannelValue(channelCounter, pixel);
+
+        System.out.println(Integer.toBinaryString(channelValueExtracted));
+
+        channels[channelCounter] = alterChannelValue(channelValueExtracted, LSBposition,
+                binaryMessage.charAt(binaryMessageCounter));
+        return channels;
+    }
+
+    public static void displayChannels(int x, int y, int[] channels) {
+        System.out.println(
+                "x: " + x + " y: " + y + ", modified channels: "
+                        + Integer.toBinaryString(channels[0])
+                        + " "
+                        + Integer.toBinaryString(channels[1]) + " "
+                        + Integer.toBinaryString(channels[2]));
     }
 
     public static void setPixel(int[] channels, BufferedImage image, int x, int y) {
