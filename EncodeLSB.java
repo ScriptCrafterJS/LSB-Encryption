@@ -9,7 +9,7 @@ public class EncodeLSB {
     private static StringBuilder decodedBinaryMessage;
 
     public static void main(String[] args) {
-        message = "Hello World";
+        message = "Motasem Nabeel Ali";
         binaryMessage = convertMessageToBinary(message);
         System.out.println("Start Encoding...");
         encode();
@@ -96,6 +96,7 @@ public class EncodeLSB {
                 }
                 LSBposition++;
             }
+            System.out.println("Decoded Binary Message: " + decodedBinaryMessage);
 
         } catch (Exception e) {
             System.out.println("Error: " + e.getMessage());
@@ -105,7 +106,7 @@ public class EncodeLSB {
 
     public static void extractBitFromPixelToMessage(int channelCounter, int pixel, int LSBposition) {
         int channelValue = getChannelValue(channelCounter, pixel);
-        System.out.println(Integer.toBinaryString(channelValue));
+        System.out.println("channelValue: " + Integer.toBinaryString(channelValue));
         byte bit = (byte) extractBit(channelValue, LSBposition);
         decodedBinaryMessage.append(bit);
     }
@@ -140,14 +141,15 @@ public class EncodeLSB {
                             while (channelCounter < 3) {
                                 channels = extractColorComponents(channelCounter, pixel, LSBposition,
                                         binaryMessageCounter, channels);
+
+                                channelCounter++; // to traverse the 3 channels
+                                binaryMessageCounter++; // to traverse each bit in the binary message
                                 // if we here reached the end of the binary message theres no need to continue
                                 // to other color channels
                                 if (binaryMessageCounter == binaryMessage.length()) {
                                     setPixel(channels, image, x, y);
                                     break outerloop;
                                 }
-                                channelCounter++; // to traverse the 3 channels
-                                binaryMessageCounter++; // to traverse each bit in the binary message
                                 if (binaryMessageCounter == binaryMessage.length()) {
                                     break outerloop;
                                 }
@@ -164,12 +166,12 @@ public class EncodeLSB {
                                 channels = extractColorComponents(channelCounter, pixel, LSBposition,
                                         binaryMessageCounter, channels);
 
+                                channelCounter++;
+                                binaryMessageCounter++;
                                 if (binaryMessageCounter == binaryMessage.length()) {
                                     setPixel(channels, image, x + 1, y + 1);
                                     break outerloop;
                                 }
-                                channelCounter++;
-                                binaryMessageCounter++;
                                 if (binaryMessageCounter == binaryMessage.length()) {
                                     break outerloop;
                                 }
@@ -187,12 +189,12 @@ public class EncodeLSB {
                                 channels = extractColorComponents(channelCounter, pixel, LSBposition,
                                         binaryMessageCounter, channels);
 
+                                channelCounter++;
+                                binaryMessageCounter++;
                                 if (binaryMessageCounter == binaryMessage.length()) {
                                     setPixel(channels, image, x + 1, y);
                                     break outerloop;
                                 }
-                                channelCounter++;
-                                binaryMessageCounter++;
                                 if (binaryMessageCounter == binaryMessage.length()) {
                                     break outerloop;
                                 }
@@ -209,12 +211,12 @@ public class EncodeLSB {
                                 channels = extractColorComponents(channelCounter, pixel, LSBposition,
                                         binaryMessageCounter, channels);
 
+                                channelCounter++;
+                                binaryMessageCounter++;
                                 if (binaryMessageCounter == binaryMessage.length()) {
                                     setPixel(channels, image, x, y + 1);
                                     break outerloop;
                                 }
-                                channelCounter++;
-                                binaryMessageCounter++;
                                 if (binaryMessageCounter == binaryMessage.length()) {
                                     break outerloop;
                                 }
